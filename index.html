@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chronos | Relojes de Precisión</title>
+<style>
+:root {
+  --bg: #09090d;
+  --bg-soft: #13131b;
+  --fg: #f4f1ea;
+  --muted: #a6a0a0;
+  --accent: #d9b15b;
+  --accent-strong: #f3cf76;
+  --accent-dim: #8d6d2e;
+  --card: rgba(20, 20, 28, 0.9);
+  --card-alt: rgba(12, 12, 18, 0.92);
+  --border: rgba(255,255,255,0.08);
+  --glow: rgba(217, 177, 91, 0.35);
+  --shadow: rgba(0, 0, 0, 0.45);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(217, 177, 91, 0.08), transparent 28%),
+    linear-gradient(180deg, #050508 0%, #09090d 100%);
+  color: var(--fg);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+canvas#bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.main { position: relative; z-index: 1; }
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(9, 9, 13, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.logo { font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-decoration: none; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav a { color: var(--fg); text-decoration: none; font-weight: 500; transition: color 0.3s; position: relative; }
+nav a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px; background: var(--accent); transition: width 0.3s; }
+nav a:hover { color: var(--accent); }
+nav a:hover::after { width: 100%; }
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; padding: 6rem 2rem 4rem;
+  position: relative;
+}
+.hero::before {
+  content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 620px; height: 620px; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+  filter: blur(80px); opacity: 0.65; animation: pulse 4s ease-in-out infinite; z-index: -1;
+}
+@keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; } 50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.8; } }
+.watch-container {
+  position: relative; width: 320px; height: 320px; margin-bottom: 2rem;
+  filter: drop-shadow(0 0 40px var(--glow));
+}
+.watch-face {
+  width: 100%; height: 100%; border-radius: 50%;
+  background: linear-gradient(145deg, #0d0d12, #1a1a24);
+  border: 4px solid var(--border);
+  position: relative; box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 0 30px var(--glow), 0 20px 40px rgba(0,0,0,0.5);
+  transform-style: preserve-3d; perspective: 1000px;
+}
+.watch-face::before {
+  content: ''; position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
+  border-radius: 50%; border: 1px solid rgba(212, 168, 67, 0.2); pointer-events: none;
+}
+.hand {
+  position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center;
+  border-radius: 2px; box-shadow: 0 0 10px var(--glow);
+}
+.hour { width: 6px; height: 70px; background: var(--fg); margin-left: -3px; box-shadow: 0 0 8px #fff; }
+.minute { width: 4px; height: 100px; background: var(--accent); margin-left: -2px; }
+.second { width: 2px; height: 115px; background: #e84d4d; margin-left: -1px; box-shadow: 0 0 8px #e84d4d; }
+.center-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, var(--accent));
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 10; box-shadow: 0 0 15px var(--glow), inset 0 -2px 4px rgba(0,0,0,0.5);
+}
+.marker {
+  position: absolute; top: 50%; left: 50%; width: 2px; height: 12px;
+  background: var(--fg); transform-origin: bottom center;
+  transform: translate(-50%, -150px); opacity: 0.7;
+}
+.marker.main { height: 18px; width: 3px; background: var(--accent); opacity: 1; }
+.crown {
+  position: absolute; right: -18px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 40px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--border), #3a3a4a, var(--border));
+  box-shadow: 2px 0 10px rgba(0,0,0,0.5), inset 0 0 5px rgba(255,255,255,0.05);
+  z-index: -1;
+}
+.strap {
+  position: absolute; bottom: -120px; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 120px;
+  background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+  border-radius: 0 0 14px 14px; z-index: -1;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+.strap::before {
+  content: ''; position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 10px; background: var(--border); border-radius: 3px;
+}
+.hero h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 300; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; background: linear-gradient(90deg, var(--fg), var(--accent), var(--fg)); -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200% auto; animation: shine 3s linear infinite; }
+@keyframes shine { to { background-position: 200% center; } }
+.hero p { font-size: 1.2rem; color: var(--muted); max-width: 500px; margin-bottom: 2rem; }
+.btn {
+  display: inline-block; padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, rgba(217,177,91,0.16), rgba(217,177,91,0.02));
+  border: 1px solid var(--accent);
+  color: var(--accent-strong);
+  font-weight: 700; text-decoration: none; letter-spacing: 1px; text-transform: uppercase;
+  border-radius: 999px; box-shadow: 0 10px 30px rgba(217,177,91,0.15);
+  transition: all 0.3s; position: relative; overflow: hidden; z-index: 1;
+}
+.btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); transition: left 0.3s; z-index: -1; }
+.btn:hover { color: var(--bg); box-shadow: 0 18px 40px rgba(217,177,91,0.28); }
+.btn:hover::before { left: 0; }
+.metrics {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto 1rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  position: relative; z-index: 2;
+}
+.metric {
+  background: rgba(17,17,24,0.7);
+  border: 1px solid var(--border);
+  border-radius: 18px; padding: 1.3rem 1rem; text-align: center;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 30px rgba(0,0,0,0.18);
+}
+.metric strong {
+  display: block; font-size: clamp(1.6rem, 2vw, 2.2rem); color: var(--accent-strong);
+  margin-bottom: 0.2rem; letter-spacing: 0.04em;
+}
+.metric span {
+  font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+.section { padding: 6rem 2rem; max-width: 1200px; margin: 0 auto; }
+.section-title { text-align: center; font-size: clamp(2rem, 4vw, 3rem); font-weight: 300; letter-spacing: 0.05em; margin-bottom: 1rem; }
+.section-sub { text-align: center; color: var(--muted); max-width: 600px; margin: 0 auto 4rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
+.card {
+  background: linear-gradient(180deg, var(--card-alt), rgba(17,17,24,0.9)); border: 1px solid var(--border); border-radius: 16px;
+  overflow: hidden; transition: transform 0.4s, box-shadow 0.4s, border-color 0.4s;
+  position: relative;
+}
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-dim)); transform: scaleX(0); transform-origin: left; transition: transform 0.4s; }
+.card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-color: var(--accent); }
+.card:hover::before { transform: scaleX(1); }
+.card-img { width: 100%; height: 220px; object-fit: cover; background: #111; }
+.card-body { padding: 1.5rem; }
+.card-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+.card-desc { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
+.card-price { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-top: 4rem; text-align: center; }
+.feature { padding: 1.5rem; }
+.feature-icon { width: 60px; height: 60px; margin: 0 auto 1rem; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--accent); transition: all 0.3s; }
+.feature:hover .feature-icon { background: var(--accent); color: var(--bg); border-color: var(--accent); transform: scale(1.1); }
+.feature h3 { font-weight: 600; margin-bottom: 0.5rem; }
+.feature p { color: var(--muted); font-size: 0.9rem; }
+footer { background: #050508; border-top: 1px solid var(--border); padding: 3rem 2rem; text-align: center; color: var(--muted); }
+.footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; max-width: 1000px; margin: 0 auto 2rem; text-align: left; }
+.footer-col h4 { color: var(--fg); margin-bottom: 1rem; font-weight: 600; }
+.footer-col ul { list-style: none; }
+.footer-col li { margin-bottom: 0.5rem; }
+.footer-col a { color: var(--muted); text-decoration: none; transition: color 0.3s; }
+.footer-col a:hover { color: var(--accent); }
+.copyright { border-top: 1px solid var(--border); padding-top: 2rem; font-size: 0.85rem; }
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+.reveal.active { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="main">
+<header>
+  <a href="#" class="logo">CHRONOS</a>
+  <nav>
+    <ul>
+      <li><a href="#collection">Colección</a></li>
+      <li><a href="#craft">Artesanía</a></li>
+      <li><a href="#contact">Contacto</a></li>
+    </ul>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="watch-container" id="watch">
+    <div class="watch-face">
+      <div class="hand hour" id="hourHand"></div>
+      <div class="hand minute" id="minuteHand"></div>
+      <div class="hand second" id="secondHand"></div>
+      <div class="center-dot"></div>
+      <div class="crown"></div>
+      <div class="strap"></div>
+    </div>
+  </div>
+  <h1>Precisión Eterna</h1>
+  <p>Ingeniería suiza fusionada con diseño vanguardista. Cada segundo cuenta una historia.</p>
+  <a href="#collection" class="btn">Explorar Colección</a>
+</section>
+
+<div class="metrics reveal">
+  <div class="metric">
+    <strong>150+</strong>
+    <span>Años</span>
+  </div>
+  <div class="metric">
+    <strong>28</strong>
+    <span>Joyas</span>
+  </div>
+  <div class="metric">
+    <strong>200m</strong>
+    <span>Resistencia</span>
+  </div>
+  <div class="metric">
+    <strong>80h</strong>
+    <span>Reserva</span>
+  </div>
+</div>
+
+<section class="section" id="collection">
+  <h2 class="section-title reveal">La Colección</h2>
+  <p class="section-sub reveal">Piezas limitadas para quienes valoran lo excepcional.</p>
+  <div class="grid">
+    <article class="card reveal">
+      <div class="card-img" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);"></div>
+      <div class="card-body">
+        <h3 class="card-title">Aether Automatic</h3>
+        <p class="card-desc">Movimiento automático 28 jewels, reserva 80h, cristal zafiro abombado.</p>
+        <div class="card-price">$12,400</div>
+      </div>
+    </article>
+    <article class="card reveal">
+      <div class="card-img" style="background: linear-gradient(135deg, #2c1810 0%, #4a2c20 100%);"></div>
+      <div class="card-body">
+        <h3 class="card-title">Chronograph Titan</h3>
+        <p class="card-desc">Caja titanio grado 5, cronógrafo flyback, resistencia 200m.</p>
+        <div class="card-price">$18,900</div>
+      </div>
+    </article>
+    <article class="card reveal">
+      <div class="card-img" style="background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);"></div>
+      <div class="card-body">
+        <h3 class="card-title">Midnight Tourbillon</h3>
+        <p class="card-desc">Turbilón volante a las 6h, platino 950, edición 50 unidades.</p>
+        <div class="card-price">$89,000</div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="section" id="craft">
+  <h2 class="section-title reveal">Artesanía</h2>
+  <p class="section-sub reveal">Más de 150 años de maestría relojera en cada detalle.</p>
+  <div class="features">
+    <div class="feature reveal">
+      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <h3>Materiales Nobles</h3>
+      <p>Oro 18k, platino, titanio y cerámica de alta tecnología.</p>
+    </div>
+    <div class="feature reveal">
+      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <h3>Precisión COSC</h3>
+      <p>Certificados Cronómetro Oficial Suizo, -4/+6 seg/día.</p>
+    </div>
+    <div class="feature reveal">
+      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <h3>Garantía Vitalicia</h3>
+      <p>Servicio y mantenimiento incluido para el primer propietario.</p>
+    </div>
+    <div class="feature reveal">
+      <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+      <h3>Hecho a Mano</h3>
+      <p>Ensamblado por un solo maestro relojero en Ginebra.</p>
+    </div>
+  </div>
+</section>
+
+<footer id="contact">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4>CHRONOS</h4>
+      <p style="color: var(--muted); font-size: 0.9rem; max-width: 250px;">Relojería de alta gama desde 1874. Ginebra, Suiza.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Colecciones</h4>
+      <ul>
+        <li><a href="#">Automáticos</a></li>
+        <li><a href="#">Cronógrafos</a></li>
+        <li><a href="#">Complicaciones</a></li>
+        <li><a href="#">Ediciones Limitadas</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Servicios</h4>
+      <ul>
+        <li><a href="#">Mantenimiento</a></li>
+        <li><a href="#">Restauración</a></li>
+        <li><a href="#">Certificación</a></li>
+        <li><a href="#">Personalización</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contacto</h4>
+      <ul>
+        <li><a href="#">rue du Rhône 12, Ginebra</a></li>
+        <li><a href="tel:+41223110000">+41 22 311 00 00</a></li>
+        <li><a href="mailto:concierge@chronos.ch">concierge@chronos.ch</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copyright">&copy; 2025 CHRONOS. Todos los derechos reservados.</div>
+</footer>
+</div>
+
+<script>
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const particleCount = 80;
+const mouse = { x: null, y: null, radius: 150 };
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+class Particle {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 1.5 + 0.5;
+    this.baseX = this.x; this.baseY = this.y;
+    this.density = (Math.random() * 30) + 1;
+    this.distance = Math.random() * 100;
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = 0.0005 + Math.random() * 0.001;
+    this.alpha = Math.random() * 0.5 + 0.1;
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(212, 168, 67, ${this.alpha})`;
+    ctx.fill();
+  }
+  update() {
+    this.angle += this.speed;
+    this.x = this.baseX + Math.cos(this.angle) * this.distance;
+    this.y = this.baseY + Math.sin(this.angle) * this.distance;
+    const dx = mouse.x - this.x;
+    const dy = mouse.y - this.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < mouse.radius) {
+      const force = (mouse.radius - dist) / mouse.radius;
+      const dirX = dx / dist; const dirY = dy / dist;
+      this.x -= dirX * force * this.density * 0.5;
+      this.y -= dirY * force * this.density * 0.5;
+    }
+    if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+  }
+}
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < particleCount; i++) particles.push(new Particle());
+}
+initParticles();
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  connectParticles();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+function connectParticles() {
+  for (let a = 0; a < particles.length; a++) {
+    for (let b = a; b < particles.length; b++) {
+      const dx = particles[a].x - particles[b].x;
+      const dy = particles[a].y - particles[b].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(212, 168, 67, ${(1 - dist/120) * 0.15})`;
+        ctx.lineWidth = 0.5;
+        ctx.moveTo(particles[a].x, particles[a].y);
+        ctx.lineTo(particles[b].x, particles[b].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+const hourHand = document.getElementById('hourHand');
+const minuteHand = document.getElementById('minuteHand');
+const secondHand = document.getElementById('secondHand');
+
+function updateWatch() {
+  const now = new Date();
+  const sec = now.getSeconds() + now.getMilliseconds() / 1000;
+  const min = now.getMinutes() + sec / 60;
+  const hr = (now.getHours() % 12) + min / 60;
+  secondHand.style.transform = `rotate(${sec * 6}deg)`;
+  minuteHand.style.transform = `rotate(${min * 6}deg)`;
+  hourHand.style.transform = `rotate(${hr * 30}deg)`;
+  requestAnimationFrame(updateWatch);
+}
+updateWatch();
+
+const revealElements = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('active'), i * 100);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+revealElements.forEach(el => observer.observe(el));
+
+const face = document.querySelector('.watch-face');
+for (let i = 0; i < 60; i++) {
+  const m = document.createElement('div');
+  m.className = 'marker' + (i % 5 === 0 ? ' main' : '');
+  m.style.transform = `translate(-50%, -150px) rotate(${i * 6}deg)`;
+  face.appendChild(m);
+}
+</script>
+</body>
+</html>

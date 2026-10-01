@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chronos | Moonlight</title>
+  <style>
+    :root {
+      --bg: #04070d;
+      --bg-2: #0b1220;
+      --panel: rgba(14, 20, 31, 0.8);
+      --panel-strong: rgba(18, 27, 38, 0.95);
+      --line: rgba(164, 184, 214, 0.16);
+      --text: #edf3ff;
+      --muted: #9daec9;
+      --blue: #8ac7ff;
+      --blue-strong: #bedcff;
+      --silver: #dfe8f7;
+      --shadow: rgba(138, 199, 255, 0.25);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(138, 199, 255, 0.18), transparent 25%),
+        linear-gradient(180deg, #02050a 0%, #07111a 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(255,255,255,0.02), transparent 40%, rgba(138,199,255,0.04));
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 20;
+      padding: 1rem 2rem;
+      background: rgba(4, 7, 13, 0.55);
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      text-decoration: none;
+      color: var(--blue-strong);
+      letter-spacing: 0.28rem;
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    nav ul {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: var(--muted);
+      transition: color 0.3s ease;
+    }
+
+    nav a:hover { color: var(--blue-strong); }
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 7rem 1.5rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(138,199,255,0.25), transparent 60%);
+      filter: blur(80px);
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .watch-wrap {
+      width: 330px;
+      height: 330px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 0 34px rgba(138, 199, 255, 0.4));
+    }
+
+    .watch {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      position: relative;
+      background: linear-gradient(145deg, rgba(10, 15, 23, 1), rgba(20, 29, 41, 1));
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.7), 0 20px 50px rgba(4, 7, 13, 0.7);
+    }
+
+    .watch::before {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(138,199,255,0.18);
+    }
+
+    .hand {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform-origin: bottom center;
+      border-radius: 999px;
+      box-shadow: 0 0 14px rgba(138,199,255,0.4);
+    }
+
+    .hour { width: 5px; height: 82px; background: var(--silver); margin-left: -2.5px; }
+    .minute { width: 4px; height: 110px; background: var(--blue); margin-left: -2px; }
+    .second { width: 2px; height: 126px; background: #dfe8f7; margin-left: -1px; }
+
+    .center {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at 30% 30%, #fff, #9ac8ff);
+      z-index: 10;
+      box-shadow: 0 0 18px rgba(138,199,255,0.6);
+    }
+
+    .strap {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: -118px;
+      width: 32px;
+      height: 120px;
+      border-radius: 0 0 18px 18px;
+      background: linear-gradient(180deg, rgba(17,23,33,1), rgba(5,9,14,1));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .strap::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -6px;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 10px;
+      border-radius: 4px;
+      background: rgba(138,199,255,0.18);
+    }
+
+    .kicker {
+      color: var(--blue-strong);
+      letter-spacing: 0.26rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      line-height: 0.95;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #f4f8ff, #a5cfff, #edf3ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lead {
+      max-width: 650px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 1rem 2.1rem;
+      border-radius: 999px;
+      text-decoration: none;
+      letter-spacing: 0.12rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(138,199,255,0.18), rgba(222,236,255,0.04));
+      border: 1px solid rgba(138,199,255,0.5);
+      color: var(--text);
+      box-shadow: 0 18px 40px rgba(138,199,255,0.12);
+    }
+
+    .btn.secondary {
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(138,199,255,0.14);
+    }
+
+    .stats {
+      width: min(1100px, calc(100% - 2rem));
+      margin: 0 auto 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .stat {
+      background: rgba(11, 17, 25, 0.74);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 1.4rem 1rem;
+      text-align: center;
+      box-shadow: 0 18px 35px rgba(0,0,0,0.25);
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--blue-strong);
+      font-size: clamp(1.8rem, 2vw, 2.2rem);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat span {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.16rem;
+      font-size: 0.72rem;
+    }
+
+    section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem;
+    }
+
+    .section-head {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .section-head h2 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+
+    .section-head p {
+      max-width: 620px;
+      margin: 0 auto;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2rem;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(16, 23, 34, 0.95), rgba(10, 14, 22, 0.9));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 22px 40px rgba(0,0,0,0.18);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(138,199,255,0.4);
+    }
+
+    .thumb {
+      height: 220px;
+      background: linear-gradient(135deg, rgba(16, 24, 35, 1), rgba(38, 53, 74, 1));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .thumb::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(138,199,255,0.18);
+      box-shadow: inset 0 0 25px rgba(138,199,255,0.1);
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .card h3 {
+      margin-bottom: 0.55rem;
+      font-size: 1.25rem;
+    }
+
+    .card p {
+      color: var(--muted);
+      margin-bottom: 1rem;
+      line-height: 1.7;
+    }
+
+    .price {
+      font-size: 1.6rem;
+      color: var(--blue-strong);
+      font-weight: 700;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .feature {
+      padding: 1.5rem;
+      text-align: center;
+      background: rgba(12, 17, 25, 0.7);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+    }
+
+    .icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 1rem;
+      color: var(--blue-strong);
+      background: rgba(138,199,255,0.08);
+      border: 1px solid rgba(138,199,255,0.2);
+    }
+
+    .feature h3 {
+      margin-bottom: 0.5rem;
+    }
+
+    .feature p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      background: rgba(4, 7, 13, 0.8);
+      padding: 3.5rem 1.5rem 2rem;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+    }
+
+    .footer-col h4 {
+      margin-bottom: 1rem;
+      letter-spacing: 0.12rem;
+      text-transform: uppercase;
+      color: var(--blue-strong);
+      font-size: 0.8rem;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .footer-col a,
+    .footer-col p {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .copyright {
+      max-width: 1200px;
+      margin: 2rem auto 0;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 700px) {
+      nav ul { gap: 1rem; }
+      .nav { gap: 1rem; }
+      .logo { letter-spacing: 0.12rem; }
+      .hero { padding-top: 8rem; }
+      .watch-wrap { width: 260px; height: 260px; }
+      .strap { bottom: -94px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="nav">
+        <a href="#" class="logo">CHRONOS</a>
+        <nav>
+          <ul>
+            <li><a href="#collection">Colección</a></li>
+            <li><a href="#craft">Artesanía</a></li>
+            <li><a href="#contact">Contacto</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-inner">
+          <div class="watch-wrap">
+            <div class="watch">
+              <div class="hand hour" id="hourHand"></div>
+              <div class="hand minute" id="minuteHand"></div>
+              <div class="hand second" id="secondHand"></div>
+              <div class="center"></div>
+              <div class="strap"></div>
+            </div>
+          </div>
+
+          <div class="kicker">Swiss precision</div>
+          <h1>Precisión Eterna</h1>
+          <p class="lead">Ingeniería suiza con un alma lunar: diseño sobrio, elegante y profundamente preciso.</p>
+
+          <div class="cta-row">
+            <a href="#collection" class="btn primary">Explorar Colección</a>
+            <a href="#craft" class="btn secondary">Nuestra artesanía</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="stats">
+        <div class="stat">
+          <strong>150+</strong>
+          <span>Años</span>
+        </div>
+        <div class="stat">
+          <strong>28</strong>
+          <span>Joyas</span>
+        </div>
+        <div class="stat">
+          <strong>200m</strong>
+          <span>Resistencia</span>
+        </div>
+        <div class="stat">
+          <strong>80h</strong>
+          <span>Reserva</span>
+        </div>
+      </div>
+
+      <section id="collection">
+        <div class="section-head">
+          <h2>La Colección</h2>
+          <p>Piezas limitadas para quienes valoran la precisión y la belleza silenciosa.</p>
+        </div>
+
+        <div class="grid">
+          <article class="card">
+            <div class="thumb"></div>
+            <div class="card-body">
+              <h3>Aether Automatic</h3>
+              <p>Movimiento automático de 28 joyas, reserva de 80 horas y cristal de zafiro.</p>
+              <div class="price">$12,400</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="thumb" style="background: linear-gradient(135deg, rgba(17,25,35,1), rgba(57,73,80,1));"></div>
+            <div class="card-body">
+              <h3>Chronograph Titan</h3>
+              <p>Caja de titanio grado 5, cronógrafo flyback y resistencia a 200 metros.</p>
+              <div class="price">$18,900</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="thumb" style="background: linear-gradient(135deg, rgba(11,18,29,1), rgba(31,45,67,1));"></div>
+            <div class="card-body">
+              <h3>Midnight Tourbillon</h3>
+              <p>Turbilón volante a las 6h, platino 950 y edición limitada de 50 piezas.</p>
+              <div class="price">$89,000</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="craft">
+        <div class="section-head">
+          <h2>Artesanía</h2>
+          <p>Más de 150 años de relojera en cada detalle, con una estética de luz nocturna.</p>
+        </div>
+
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="icon">✦</div>
+            <h3>Materiales nobles</h3>
+            <p>Oro, platino, titanio y cerámica de alta gama.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">◔</div>
+            <h3>Precisión COSC</h3>
+            <p>Certificación oficial suiza para máxima exactitud.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">▣</div>
+            <h3>Garantía vitalicia</h3>
+            <p>Servicio de mantenimiento para el primer propietario.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">↔</div>
+            <h3>Hecho a mano</h3>
+            <p>Ensamblado y acabado por maestros relojeros.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="contact">
+      <div class="footer-inner">
+        <div class="footer-col">
+          <h4>Chronos</h4>
+          <p>Relojería de alta gama desde 1874. Ginebra, Suiza.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Colecciones</h4>
+          <ul>
+            <li><a href="#">Automáticos</a></li>
+            <li><a href="#">Cronógrafos</a></li>
+            <li><a href="#">Complicaciones</a></li>
+            <li><a href="#">Ediciones</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Servicios</h4>
+          <ul>
+            <li><a href="#">Mantenimiento</a></li>
+            <li><a href="#">Restauración</a></li>
+            <li><a href="#">Certificación</a></li>
+            <li><a href="#">Personalización</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href="#">rue du Rhône 12, Ginebra</a></li>
+            <li><a href="tel:+41223110000">+41 22 311 00 00</a></li>
+            <li><a href="mailto:concierge@chronos.ch">concierge@chronos.ch</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="copyright">© 2025 CHRONOS. Todos los derechos reservados.</div>
+    </footer>
+  </div>
+
+  <script>
+    const hourHand = document.getElementById('hourHand');
+    const minuteHand = document.getElementById('minuteHand');
+    const secondHand = document.getElementById('secondHand');
+
+    function updateWatch() {
+      const now = new Date();
+      const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+      const minutes = now.getMinutes() + seconds / 60;
+      const hours = (now.getHours() % 12) + minutes / 60;
+
+      secondHand.style.transform = `rotate(${seconds * 6}deg)`;
+      minuteHand.style.transform = `rotate(${minutes * 6}deg)`;
+      hourHand.style.transform = `rotate(${hours * 30}deg)`;
+
+      requestAnimationFrame(updateWatch);
+    }
+
+    updateWatch();
+  </script>
+</body>
+</html>
